@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utah Nature Trips</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7B6FA8;
+      --purple-dark: #6A5F94;
+      --purple-light: #EDE9F6;
+      --purple-tag: #D9D3EF;
+      --text: #2D2D2D;
+      --text-muted: #6B6B6B;
+      --border: #E0DBF0;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--white);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--purple);
+      color: var(--white);
+      padding: 1.25rem 1rem 1rem;
+      text-align: center;
+    }
+
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.01em; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 0.25rem; }
+
+    .filters {
+      background: var(--purple-light);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem;
+    }
+
+    .filter-group { margin-bottom: 0.85rem; }
+    .filter-group:last-child { margin-bottom: 0; }
+
+    .filter-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .filter-btn {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .filter-btn.active {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: var(--white);
+    }
+
+    .filter-btn:active { opacity: 0.8; }
+
+    .results-meta {
+      padding: 0.75rem 1rem 0.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .cards {
+      padding: 0.5rem 1rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 1px 4px rgba(123, 111, 168, 0.08);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-drive {
+      font-size: 0.78rem;
+      color: var(--purple-dark);
+      font-weight: 600;
+      white-space: nowrap;
+      background: var(--purple-light);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .card-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0.65rem;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      background: var(--purple-tag);
+      color: var(--purple-dark);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-weight: 500;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 3rem 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Utah Nature Trips</h1>
+  <p>Starting from Herriman, UT</p>
+</header>
+
+<section class="filters">
+  <div class="filter-group">
+    <div class="filter-label">Drive Time</div>
+    <div class="filter-buttons" id="time-filters">
+      <button class="filter-btn" data-group="time" data-value="under1">Under 1 hr</button>
+      <button class="filter-btn" data-group="time" data-value="1to2">1–2 hrs</button>
+      <button class="filter-btn" data-group="time" data-value="2to3">2–3 hrs</button>
+      <button class="filter-btn" data-group="time" data-value="3plus">3+ hrs</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Interest</div>
+    <div class="filter-buttons" id="interest-filters">
+      <button class="filter-btn" data-group="interest" data-value="Hiking">Hiking</button>
+      <button class="filter-btn" data-group="interest" data-value="Scenic">Scenic</button>
+      <button class="filter-btn" data-group="interest" data-value="Camping">Camping</button>
+      <button class="filter-btn" data-group="interest" data-value="Water">Water</button>
+    </div>
+  </div>
+</section>
+
+<div class="results-meta" id="results-meta"></div>
+<div class="cards" id="cards"></div>
+
+<script>
+  const destinations = [
+    {
+      name: "American Fork Canyon",
+      driveMinutes: 40,
+      timeBucket: "under1",
+      tags: ["Hiking", "Scenic", "Camping"],
+      desc: "A short drive to dramatic canyon scenery, waterfalls, and trails for all skill levels. Great for a quick half-day trip."
+    },
+    {
+      name: "Timpanogos Cave National Monument",
+      driveMinutes: 45,
+      timeBucket: "under1",
+      tags: ["Hiking", "Scenic"],
+      desc: "Hike up to stunning cave formations inside Mount Timpanogos. Guided tours available; reservations recommended."
+    },
+    {
+      name: "Antelope Island State Park",
+      driveMinutes: 45,
+      timeBucket: "under1",
+      tags: ["Hiking", "Scenic"],
+      desc: "An island in the Great Salt Lake with bison herds, sweeping lake views, and trails along a rocky shoreline."
+    },
+    {
+      name: "Mirror Lake Scenic Byway",
+      driveMinutes: 90,
+      timeBucket: "1to2",
+      tags: ["Scenic", "Camping", "Water"],
+      desc: "A stunning alpine highway through the Uintas with crystal-clear lakes, meadows, and excellent camping spots."
+    },
+    {
+      name: "Goblin Valley State Park",
+      driveMinutes: 150,
+      timeBucket: "2to3",
+      tags: ["Hiking", "Scenic", "Camping"],
+      desc: "Thousands of mushroom-shaped sandstone formations spread across an otherworldly valley. Free-roam hiking allowed."
+    },
+    {
+      name: "Cedar Breaks National Monument",
+      driveMinutes: 165,
+      timeBucket: "2to3",
+      tags: ["Hiking", "Scenic"],
+      desc: "A massive natural amphitheater carved into the cliffs at 10,000 feet, with brilliant colors and sweeping views."
+    },
+    {
+      name: "Zion National Park",
+      driveMinutes: 160,
+      timeBucket: "2to3",
+      tags: ["Hiking", "Scenic", "Water"],
+      desc: "Utah's crown jewel — towering red canyon walls, the Virgin River narrows, and trails ranging from easy to epic."
+    },
+    {
+      name: "Bryce Canyon National Park",
+      driveMinutes: 180,
+      timeBucket: "3plus",
+      tags: ["Hiking", "Scenic"],
+      desc: "Famous for its hoodoo spires and crimson rock formations. The rim trail offers incredible views without a strenuous hike."
+    },
+    {
+      name: "Capitol Reef National Park",
+      driveMinutes: 185,
+      timeBucket: "3plus",
+      tags: ["Hiking", "Scenic"],
+      desc: "A hidden gem — a 100-mile wrinkle in the earth's crust with petroglyphs, slot canyons, and historic fruit orchards."
+    },
+    {
+      name: "Dead Horse Point State Park",
+      driveMinutes: 210,
+      timeBucket: "3plus",
+      tags: ["Scenic"],
+      desc: "A dramatic overlook 2,000 feet above the Colorado River with one of the most photographed views in Utah."
+    },
+    {
+      name: "Arches National Park",
+      driveMinutes: 215,
+      timeBucket: "3plus",
+      tags: ["Hiking", "Scenic"],
+      desc: "Over 2,000 natural stone arches including the iconic Delicate Arch. Best visited at sunrise or sunset."
+    },
+    {
+      name: "Canyonlands National Park",
+      driveMinutes: 225,
+      timeBucket: "3plus",
+      tags: ["Hiking", "Scenic", "Camping"],
+      desc: "Utah's largest national park — vast canyon country carved by the Colorado and Green Rivers with remote backcountry camping."
+    }
+  ];
+
+  const activeFilters = { time: new Set(), interest: new Set() };
+
+  function driveLabel(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h} hr`;
+    return `${h} hr ${m} min`;
+  }
+
+  function filterDestinations() {
+    return destinations.filter(d => {
+      const timeOk = activeFilters.time.size === 0 || activeFilters.time.has(d.timeBucket);
+      const interestOk = activeFilters.interest.size === 0 ||
+        d.tags.some(t => activeFilters.interest.has(t));
+      return timeOk && interestOk;
+    });
+  }
+
+  function render() {
+    const results = filterDestinations();
+    const meta = document.getElementById("results-meta");
+    const cards = document.getElementById("cards");
+
+    meta.textContent = results.length === destinations.length
+      ? `Showing all ${results.length} destinations`
+      : `${results.length} of ${destinations.length} destinations`;
+
+    if (results.length === 0) {
+      cards.innerHTML = '<div class="empty">No destinations match your filters.<br>Try removing a filter.</div>';
+      return;
+    }
+
+    cards.innerHTML = results.map(d => `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-name">${d.name}</div>
+          <div class="card-drive">${driveLabel(d.driveMinutes)}</div>
+        </div>
+        <div class="card-desc">${d.desc}</div>
+        <div class="card-tags">${d.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+      </div>
+    `).join("");
+  }
+
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const { group, value } = btn.dataset;
+      if (activeFilters[group].has(value)) {
+        activeFilters[group].delete(value);
+        btn.classList.remove("active");
+      } else {
+        activeFilters[group].add(value);
+        btn.classList.add("active");
+      }
+      render();
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
